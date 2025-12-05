@@ -1,0 +1,21 @@
+# Entorno virtual
+venv/
+
+# Base de datos local
+db.sqlite3
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Clave privada de Firebase
+firebase-key.json
+
+# Config de editor
+.vscode/
+.idea/
