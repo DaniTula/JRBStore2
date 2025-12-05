@@ -6,42 +6,47 @@
 
 <!--
   Barra de navegación principal:
-  - Menú lateral (offcanvas) a la izquierda
+  - Menú lateral (offcanvas) 
   - Logo / nombre de la tienda
   - Buscador central
-  - Enlaces "Iniciar sesión / Registrarse" a la derecha
+  - Enlaces "Iniciar sesión / Registrarse" 
 -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <div class="container-fluid">
+<nav class="navbar navbar-dark bg-primary py-1">
+  <!--
+    container-fluid: ocupa todo el ancho sin dejar tanto espacio lateral
+    px-2: un poquito de padding horizontal, para que no quede 100% pegado
+  -->
+  <div class="container-fluid px-2">
 
     <!-- Botón que abre el panel administrativo (offcanvas) -->
-    <button class="btn btn-outline-light me-3"
+    <button class="btn btn-outline-light me-2"
             type="button"
             data-bs-toggle="offcanvas"
             data-bs-target="#adminPanel"
             aria-controls="adminPanel">
-      <!-- Uso de icono de menú simple (tres líneas) -->
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <!-- Nombre de la tienda -->
-    <a class="navbar-brand fw-bold" href="#">JRBStore</a>
+    <!-- Nombre de la tienda, sin margen extra a la derecha -->
+    <a class="navbar-brand fw-bold fs-5 me-2" href="#">
+      JRBStore
+    </a>
 
-    <!-- Buscador: toma todo el espacio posible entre logo y zona derecha -->
-    <form class="d-flex flex-grow-1 mx-3">
-      <input class="form-control"
+    <!-- Buscador central (se muestra solo en pantallas medianas hacia arriba) -->
+    <form class="d-none d-md-flex flex-grow-1 justify-content-center mx-2">
+      <input class="form-control w-50"
              type="search"
              placeholder="¿Qué desea encontrar?"
              aria-label="Buscar" />
     </form>
 
-    <!-- Enlaces de autenticación (sin funcionalidad por ahora) -->
-    <div class="d-flex align-items-center text-white">
-      <a href="#" class="text-white text-decoration-none me-2">
+    <!-- Enlaces de autenticación -->
+    <div class="d-flex align-items-center text-white ms-2">
+      <a href="#" class="text-white text-decoration-none me-1">
         Iniciar sesión
       </a>
       <span class="mx-1">/</span>
-      <a href="#" class="text-white text-decoration-none ms-2">
+      <a href="#" class="text-white text-decoration-none ms-1">
         Registrarse
       </a>
     </div>
@@ -60,7 +65,7 @@
       Sidebar de filtros:
       - Consola (select)
       - Tipo (radios)
-      - Géneros (select múltiple)
+      - Géneros (checkboxes)
       - Precio (rangos min / max + botones)
       Usamos bg-primary y text-white para asemejar el diseño original.
     -->
@@ -115,22 +120,115 @@
           </div>
         </div>
 
-        <!-- Filtro: Géneros -->
+        <!-- Filtro: Géneros-->
         <div class="mb-4">
           <div class="fw-semibold mb-1">Géneros</div>
-          <!-- Select múltiple para géneros; tamaño fijo con size -->
-          <select class="form-select form-select-sm" multiple size="8">
-            <option>Acción</option>
-            <option>Aventura</option>
-            <option>Battle Royale</option>
-            <option>Carreras</option>
-            <option>Deportes</option>
-            <option>Estrategia</option>
-            <option>Hack and Slash</option>
-            <option>RPG</option>
-            <option>Shooter</option>
-            <option>Terror</option>
-          </select>
+
+          <!--
+            Cada género es un checkbox independiente.
+            Puedes marcar todos los que quieras.
+          -->
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="accion"
+                   id="genAccion">
+            <label class="form-check-label" for="genAccion">
+              Acción
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="aventura"
+                   id="genAventura">
+            <label class="form-check-label" for="genAventura">
+              Aventura
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="battle-royale"
+                   id="genBattleRoyale">
+            <label class="form-check-label" for="genBattleRoyale">
+              Battle Royale
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="carreras"
+                   id="genCarreras">
+            <label class="form-check-label" for="genCarreras">
+              Carreras
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="deportes"
+                   id="genDeportes">
+            <label class="form-check-label" for="genDeportes">
+              Deportes
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="estrategia"
+                   id="genEstrategia">
+            <label class="form-check-label" for="genEstrategia">
+              Estrategia
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="hack-and-slash"
+                   id="genHackSlash">
+            <label class="form-check-label" for="genHackSlash">
+              Hack and Slash
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="rpg"
+                   id="genRpg">
+            <label class="form-check-label" for="genRpg">
+              RPG
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="shooter"
+                   id="genShooter">
+            <label class="form-check-label" for="genShooter">
+              Shooter
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   value="terror"
+                   id="genTerror">
+            <label class="form-check-label" for="genTerror">
+              Terror
+            </label>
+          </div>
+
+          <!-- Texto aclarando que se pueden elegir varias opciones -->
           <small class="d-block mt-1">
             Puedes seleccionar varios.
           </small>
@@ -177,25 +275,81 @@
       - Por ahora solo muestra un mensaje de "Aún no hay productos".
       - Más adelante aquí se renderizarán tarjetas de productos.
     -->
+        <!-- Área principal -->
     <main class="col-12 col-md-8 col-lg-9 mb-3">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+      {% if productos %}
+        <!-- Grid de tarjetas de productos -->
+        <div class="row g-3">
+          {% for producto in productos %}
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm"
+                    onmouseover="this.classList.add('shadow')"
+                    onmouseout="this.classList.remove('shadow')">
+                
+                {% if producto.imagen %}
+                  <!-- Imagen del producto -->
+                  <img src="{{ producto.imagen.url }}"
+                       class="card-img-top"
+                       alt="{{ producto.nombre }}"
+                       style="height: 200px; object-fit: cover;">
+                {% endif %}
 
-          <!-- Icono simple usando emoji para representar una caja -->
-          <div class="mb-3" style="font-size: 3rem;">
-            📦
-          </div>
+                <div class="card-body d-flex flex-column">
 
-          <h5 class="card-title mb-2">
-            Aún no hay productos
-          </h5>
+                  <!-- Nombre del juego -->
+                  <h5 class="card-title mb-1">
+                    {{ producto.nombre }}
+                  </h5>
 
-          <p class="card-text text-muted">
-            Cuando agregues items, aparecerán aquí.
-          </p>
+                  <!-- Año, consola, formato, estado -->
+                  <p class="mb-1 small text-muted">
+                    {{ producto.anio_lanzamiento|date:"Y" }}
+                    · {{ producto.plataforma }}
+                    · {{ producto.get_formato_display }}
+                    · {{ producto.get_estado_display }}
+                  </p>
 
+                  <!-- Géneros -->
+                  <p class="mb-1 small text-muted">
+                    {{ producto.generos.all|join:", " }}
+                  </p>
+
+                  <!-- Descripción corta -->
+                  <p class="card-text small mb-2">
+                    {{ producto.descripcion|default:"Sin descripción."|truncatechars:110 }}
+                  </p>
+
+                  <!-- Precio y botón (placeholder) -->
+                  <div class="mt-auto d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-5">
+                      ${{ producto.valor }}
+                    </span>
+                    <button type="button" class="btn btn-sm btn-primary">
+                      Agregar al carrito
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          {% endfor %}
         </div>
-      </div>
+      {% else %}
+        <!-- Mensaje cuando aún no hay productos -->
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+            <div class="mb-3" style="font-size: 3rem;">
+              📦
+            </div>
+            <h5 class="card-title mb-2">
+              Aún no hay productos
+            </h5>
+            <p class="card-text text-muted">
+              Cuando agregues items, aparecerán aquí.
+            </p>
+          </div>
+        </div>
+      {% endif %}
     </main>
 
   </div>
@@ -220,12 +374,13 @@
   </div>
 
   <div class="offcanvas-body">
-    <!-- Lista de enlaces administrativos (por ahora solo placeholders) -->
+    <!-- Lista de enlaces administrativos -->
     <div class="list-group">
       <a href="/admin/" class="list-group-item list-group-item-action">
         Admin Django
       </a>
-      <a href="#" class="list-group-item list-group-item-action">
+      <!-- Enlace a nuestra vista product_list -->
+      <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action">
         Productos
       </a>
     </div>

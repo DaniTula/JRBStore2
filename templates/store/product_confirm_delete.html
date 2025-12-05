@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar producto - JRBStore2{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-dark bg-danger">
+  <div class="container-fluid px-2">
+    <a class="navbar-brand" href="{% url 'product_list' %}">← Volver a productos</a>
+    <span class="navbar-text text-white">
+      Eliminar producto
+    </span>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="card border-danger">
+        <div class="card-body">
+          <h5 class="card-title text-danger">
+            ¿Seguro que quieres eliminar este producto?
+          </h5>
+          <p>
+            <strong>{{ producto.nombre }}</strong>
+            ({{ producto.plataforma }} - {{ producto.genero }})
+          </p>
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-end">
+              <a href="{% url 'product_list' %}" class="btn btn-secondary me-2">
+                Cancelar
+              </a>
+              <button type="submit" class="btn btn-danger">
+                Sí, eliminar
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
