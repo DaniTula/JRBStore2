@@ -1,10 +1,10 @@
 import logging
-
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-
 from .models import Producto
 from firebase_app import get_db
+from django.contrib.auth.models import User
+
 
 logger = logging.getLogger(__name__)
 
@@ -65,3 +65,26 @@ def delete_producto_firestore(sender, instance: Producto, **kwargs):
             str(e),
         )
 
+@receiver(post_save, sender=User)
+def sync_user_to_firestore(sender, instance, created, **kwargs):
+    """
+    Cada vez que un User se crea o se actualiza, guardamos/actualizamos
+    un documento en Firestore.
+    """
+    db = get_db()
+    doc_ref = db.collection("usuarios").document(str(instance.id))
+
+    data = {
+        "username": instance.username,
+        "email": instance.email or None,
+        "first_name": instance.first_name or "",
+        "last_name": instance.last_name or "",
+        "is_staff": instance.is_staff,
+        "is_superuser": instance.is_superuser,
+        "is_active": instance.is_active,
+        "date_joined": instance.date_joined.isoformat(),
+        "last_login": instance.last_login.isoformat() if instance.last_login else None,
+    }
+
+    # Si es nuevo o se actualiza, usamos set con merge
+    doc_ref.set(data, merge=True)

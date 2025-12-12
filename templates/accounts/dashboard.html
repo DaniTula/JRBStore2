@@ -1,58 +1,220 @@
+{# templates/store/account_dashboard.html #}
 {% extends "base.html" %}
 
-{% block title %}Mi cuenta - JRBStore2{% endblock %}
+{% block title %}Panel de cuenta - JRBStore2{% endblock %}
 
 {% block content %}
 
-<nav class="navbar navbar-dark bg-primary py-1">
-  <div class="container-fluid px-2">
-    <a class="navbar-brand fw-bold fs-5" href="{% url 'home' %}">
+{# NAVBAR DEL PANEL DE CUENTA #}
+<nav class="navbar navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid px-3 px-md-4 d-flex justify-content-between align-items-center">
+    <a href="{% url 'home' %}" class="navbar-brand fw-bold">
       JRBStore
     </a>
-    <span class="navbar-text text-white">
+
+    <span class="text-white small d-none d-sm-inline">
       Panel de cuenta
     </span>
+
+    <div class="d-flex align-items-center text-white small">
+      <span class="me-3">
+        {{ user.email|default:user.username }}
+      </span>
+      <form action="{% url 'logout' %}" method="post" class="m-0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-light btn-sm">
+          Cerrar sesión
+        </button>
+      </form>
+    </div>
   </div>
 </nav>
 
-<div class="container py-4">
-  <div class="row">
-    <div class="col-12 col-lg-4 mb-3">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <h5 class="card-title mb-2">Datos del usuario</h5>
-          <p class="mb-1"><strong>Nombre:</strong> {{ user.get_full_name|default:"(sin nombre)" }}</p>
-          <p class="mb-1"><strong>Usuario:</strong> {{ user.username }}</p>
-          <p class="mb-1"><strong>Correo:</strong> {{ user.email }}</p>
-        </div>
-      </div>
-    </div>
+<div class="bg-light py-4">
+  <div class="container-xxl px-3 px-md-4">
 
-    <div class="col-12 col-lg-8 mb-3">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          {% if user.is_staff %}
-            <h5 class="card-title mb-3">Panel administrativo</h5>
-            <p class="text-muted">
-              Tienes permisos de administración. Desde aquí puedes acceder a la gestión de la tienda.
-            </p>
-            <a href="{% url 'product_list' %}" class="btn btn-primary me-2 mb-2">
-              Gestionar productos
-            </a>
-            <a href="/admin/" class="btn btn-outline-secondary mb-2">
-              Admin Django
-            </a>
-          {% else %}
-            <h5 class="card-title mb-3">Resumen de cliente</h5>
-            <p class="text-muted">
-              En el futuro aquí podrás ver tus pedidos, direcciones de envío y métodos de pago.
-            </p>
-            <a href="{% url 'cart_detail' %}" class="btn btn-primary">
-              Ver carrito actual
-            </a>
-          {% endif %}
+    <div class="row g-4">
+      {# ------------------ SIDEBAR IZQUIERDA ------------------ #}
+      <aside class="col-12 col-md-3 col-lg-2">
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+
+              <a href="#"
+                 class="list-group-item list-group-item-action active d-flex align-items-center">
+                <span class="me-2">🛒</span>
+                <span class="small">Mis compras</span>
+              </a>
+
+              <a href="#"
+                 class="list-group-item list-group-item-action d-flex align-items-center">
+                <span class="me-2">👤</span>
+                <span class="small">Mi perfil</span>
+              </a>
+
+              <a href="#"
+                 class="list-group-item list-group-item-action d-flex align-items-center">
+                <span class="me-2">🎟️</span>
+                <span class="small">Mis cupones</span>
+              </a>
+
+            </div>
+          </div>
         </div>
-      </div>
+      </aside>
+
+      {# ------------------ CONTENIDO PRINCIPAL ------------------ #}
+      <main class="col-12 col-md-9 col-lg-10">
+
+        <div class="mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center">
+          <div>
+            <h4 class="mb-0">Mi cuenta</h4>
+            <small class="text-muted">
+              Conectado como {{ user.email|default:user.username }}
+            </small>
+          </div>
+        </div>
+
+        <div class="row g-3 g-md-4">
+
+          {# DATOS DE LA CUENTA #}
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="card h-100 shadow-sm border-0">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                  <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-2 px-2 py-1">
+                    👤
+                  </div>
+                  <h6 class="mb-0">Datos de la cuenta</h6>
+                </div>
+                <p class="small text-muted mb-2">
+                  Información básica de tu usuario y correo de acceso.
+                </p>
+                <p class="small mb-1">
+                  <span class="text-muted">Usuario:</span> {{ user.username }}
+                </p>
+                <p class="small mb-3">
+                  <span class="text-muted">Correo:</span> {{ user.email|default:"—" }}
+                </p>
+                <button class="btn btn-outline-primary btn-sm w-100" disabled>
+                  Próximamente
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {# SEGURIDAD #}
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="card h-100 shadow-sm border-0">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                  <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center me-2 px-2 py-1">
+                    🔒
+                  </div>
+                  <h6 class="mb-0">Seguridad</h6>
+                </div>
+                <p class="small text-muted mb-3">
+                  Configuración de contraseña y opciones de seguridad de la cuenta.
+                </p>
+                <button class="btn btn-outline-primary btn-sm w-100" disabled>
+                  Configurar seguridad
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {# TARJETAS #}
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="card h-100 shadow-sm border-0">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                  <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center me-2 px-2 py-1">
+                    💳
+                  </div>
+                  <h6 class="mb-0">Tarjetas</h6>
+                </div>
+                <p class="small text-muted mb-3">
+                  Guarda y administra los métodos de pago que utilizarás en la tienda.
+                </p>
+                <button class="btn btn-outline-primary btn-sm w-100" disabled>
+                  Administrar tarjetas
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {# DIRECCIONES #}
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="card h-100 shadow-sm border-0">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                  <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center me-2 px-2 py-1">
+                    📍
+                  </div>
+                  <h6 class="mb-0">Direcciones</h6>
+                </div>
+                <p class="small text-muted mb-3">
+                  Registra las direcciones de envío para tus compras físicas.
+                </p>
+                <button class="btn btn-outline-primary btn-sm w-100" disabled>
+                  Administrar direcciones
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {# SOLO ADMIN / STAFF #}
+        {% if user.is_staff or user.is_superuser %}
+          <hr class="my-4">
+          <h6 class="text-muted text-uppercase small mb-3">
+            Administración de la tienda
+          </h6>
+          <div class="row g-3 g-md-4">
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-2 px-2 py-1">
+                      🛠️
+                    </div>
+                    <h6 class="mb-0">Gestión de productos</h6>
+                  </div>
+                  <p class="small text-muted mb-3">
+                    Acceso rápido al panel interno para administrar el catálogo.
+                  </p>
+                  <a href="{% url 'product_list' %}"
+                     class="btn btn-primary btn-sm w-100">
+                    Ir al panel de productos
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-secondary bg-opacity-10 text-secondary d-flex align-items-center justify-content-center me-2 px-2 py-1">
+                      ⚙️
+                    </div>
+                    <h6 class="mb-0">Admin Django</h6>
+                  </div>
+                  <p class="small text-muted mb-3">
+                    Herramientas avanzadas de administración del sistema.
+                  </p>
+                  <a href="/admin/"
+                     class="btn btn-outline-secondary btn-sm w-100">
+                    Abrir Admin
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+      </main>
     </div>
   </div>
 </div>
