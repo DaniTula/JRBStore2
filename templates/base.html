@@ -16,6 +16,7 @@
 </head>
 
 <body class="bg-light">
+  {# OJO: los mensajes se renderizan en cada template (home, carrito, etc.) #}
   {% block content %}{% endblock %}
 
   <script
@@ -24,7 +25,32 @@
     crossorigin="anonymous">
   </script>
 
+  {# Hace que las alertas Bootstrap se cierren solas después de 3 segundos #}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const alerts = document.querySelectorAll('.alert.alert-dismissible');
+
+      alerts.forEach(function (alert) {
+        setTimeout(function () {
+          try {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Alert) {
+              const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+              bsAlert.close();
+            } else {
+              // Fallback por si Bootstrap no está disponible por alguna razón
+              alert.classList.remove('show');
+            }
+          } catch (e) {
+            alert.classList.remove('show');
+          }
+        }, 3000); // 3000 ms = 3 segundos
+      });
+    });
+  </script>
+
   {% block extra_js %}{% endblock %}
 </body>
 </html>
+
+
 

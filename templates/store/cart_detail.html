@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Carrito de compras - JRBStore2{% endblock %}
+
+{% block content %}
+
+<nav class="navbar navbar-dark bg-primary py-1">
+  <div class="container-fluid px-2">
+
+    <!-- Botón que abre el panel administrativo -->
+    <button class="btn btn-outline-light me-2"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#adminPanel"
+            aria-controls="adminPanel">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Nombre de la tienda -->
+    <a class="navbar-brand fw-bold fs-5 me-2" href="{% url 'home' %}">
+      JRBStore
+    </a>
+
+    <!-- Título centrado -->
+    <span class="navbar-text text-white fw-semibold ms-2">
+      Carrito de compras
+    </span>
+
+    <div class="ms-auto d-flex align-items-center">
+      <!-- Icono de carrito -->
+      <a href="{% url 'cart_detail' %}" class="btn btn-outline-light me-2">
+        🛒
+        {% if cart_total_items %}
+          <span class="badge bg-light text-primary ms-1">{{ cart_total_items }}</span>
+        {% endif %}
+      </a>
+
+      <!-- Enlaces de autenticación -->
+      <div class="d-flex align-items-center text-white">
+        <a href="#" class="text-white text-decoration-none me-1">
+          Iniciar sesión
+        </a>
+        <span class="mx-1">/</span>
+        <a href="#" class="text-white text-decoration-none ms-1">
+          Registrarse
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+{# MENSAJES FLASH BAJO LA BARRA #}
+{% if messages %}
+  <div class="container-fluid mt-2">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mb-2" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="container-fluid py-3">
+  <div class="row">
+
+    <!-- Columna izquierda: lista de productos -->
+    <div class="col-12 col-lg-8 mb-3">
+
+      {% if cart_items %}
+        {% for item in cart_items %}
+          {% with producto=item.product %}
+
+          <div class="card mb-3">
+            <div class="row g-0 align-items-center">
+
+              <!-- Imagen pequeña -->
+              <div class="col-4 col-md-3 text-center p-2">
+                {% if producto and producto.imagen %}
+                  <img src="{{ producto.imagen.url }}"
+                       alt="{{ producto.nombre }}"
+                       class="img-fluid rounded"
+                       style="max-height: 180px; object-fit: cover;">
+                {% else %}
+                  <div class="border rounded d-flex align-items-center justify-content-center"
+                       style="height: 180px;">
+                    <span class="text-muted small">Sin imagen</span>
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Datos -->
+              <div class="col-8 col-md-9">
+                <div class="card-body">
+
+                  <h5 class="card-title mb-1">
+                    {% if producto %}
+                      {{ producto.nombre }}
+                    {% else %}
+                      Producto eliminado
+                    {% endif %}
+                  </h5>
+
+                  {% if item.missing %}
+                    <p class="text-danger small mb-1">
+                      Este producto fue eliminado de la tienda. Elimínalo del carrito para continuar.
+                    </p>
+                  {% elif item.insufficient_stock %}
+                    <p class="text-danger small mb-1">
+                      Stock insuficiente. Ajusta la cantidad o elimina el producto.
+                    </p>
+                  {% else %}
+                    {% if producto %}
+                      <p class="card-text small text-muted mb-1">
+                        {{ producto.descripcion|default:"Sin descripción."|truncatechars:90 }}
+                      </p>
+                    {% endif %}
+                  {% endif %}
+
+                  <p class="mb-2">
+                    <span class="fw-bold">Valor:</span>
+                    ${{ item.price }}
+                    <span class="text-muted small">(c/u)</span>
+                  </p>
+
+                  <div class="d-flex align-items-center gap-2">
+
+                    {% if not item.missing and producto %}
+                      <form method="post" action="{% url 'cart_update' producto.id %}">
+                        {% csrf_token %}
+                        <select name="quantity"
+                                class="form-select form-select-sm d-inline-block"
+                                style="width: 80px;"
+                                onchange="this.form.submit()">
+                          {% for i in quantity_range %}
+                            <option value="{{ i }}" {% if i == item.quantity %}selected{% endif %}>
+                              {{ i }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                      </form>
+                    {% endif %}
+
+                    <form method="post"
+                          action="{% if item.missing %}{% url 'cart_remove_by_id' item.product_id %}{% else %}{% url 'cart_remove' producto.id %}{% endif %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-danger">
+                        Eliminar
+                      </button>
+                    </form>
+
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {% endwith %}
+        {% endfor %}
+
+      {% else %}
+        <div class="alert alert-info">
+          Tu carrito está vacío.
+        </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Columna derecha: resumen -->
+    <div class="col-12 col-lg-4">
+      <div class="card">
+        <div class="card-header">
+          Resumen de la compra
+        </div>
+        <div class="card-body">
+
+          {% if cart_items %}
+            <ul class="list-group list-group-flush mb-3">
+              {% for item in cart_items %}
+                {% with producto=item.product %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                    <div>
+                      <div class="fw-semibold">
+                        {% if producto %}
+                          {{ producto.nombre }}
+                        {% else %}
+                          Producto eliminado
+                        {% endif %}
+                      </div>
+                      <small class="text-muted">
+                        Cantidad: {{ item.quantity }}
+                      </small>
+                    </div>
+                    <span>${{ item.total_price }}</span>
+                  </li>
+                {% endwith %}
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted small mb-3">
+              No hay productos en el carrito.
+            </p>
+          {% endif %}
+
+          <div class="mb-2 d-flex justify-content-between">
+            <span>Total productos</span>
+            <span>${{ total_products }}</span>
+          </div>
+          <div class="mb-2 d-flex justify-content-between">
+            <span>Envío</span>
+            <span>${{ shipping }}</span>
+          </div>
+          <hr>
+          <div class="mb-3 d-flex justify-content-between fw-bold">
+            <span>Total</span>
+            <span>${{ grand_total }}</span>
+          </div>
+
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'home' %}" class="btn btn-warning">
+              Buscar más productos
+            </a>
+            <button type="button" class="btn btn-primary" disabled>
+              Continuar compra
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Offcanvas (panel administrativo) -->
+<div class="offcanvas offcanvas-start"
+     tabindex="-1"
+     id="adminPanel"
+     aria-labelledby="adminPanelLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="adminPanelLabel">
+      Panel administrativo
+    </h5>
+    <button type="button"
+            class="btn-close text-reset"
+            data-bs-dismiss="offcanvas"
+            aria-label="Cerrar"></button>
+  </div>
+
+  <div class="offcanvas-body">
+    <div class="list-group">
+      <a href="/admin/" class="list-group-item list-group-item-action">
+        Admin Django
+      </a>
+      <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action">
+        Productos
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+

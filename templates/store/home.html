@@ -6,16 +6,13 @@
 
 <!--
   Barra de navegación principal:
-  - Menú lateral (offcanvas) 
+  - Menú lateral (offcanvas)
   - Logo / nombre de la tienda
   - Buscador central
-  - Enlaces "Iniciar sesión / Registrarse" 
+  - Icono carrito
+  - Enlaces "Iniciar sesión / Registrarse"
 -->
 <nav class="navbar navbar-dark bg-primary py-1">
-  <!--
-    container-fluid: ocupa todo el ancho sin dejar tanto espacio lateral
-    px-2: un poquito de padding horizontal, para que no quede 100% pegado
-  -->
   <div class="container-fluid px-2">
 
     <!-- Botón que abre el panel administrativo (offcanvas) -->
@@ -27,18 +24,26 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <!-- Nombre de la tienda, sin margen extra a la derecha -->
-    <a class="navbar-brand fw-bold fs-5 me-2" href="#">
+    <!-- Nombre de la tienda -->
+    <a class="navbar-brand fw-bold fs-5 me-2" href="{% url 'home' %}">
       JRBStore
     </a>
 
-    <!-- Buscador central (se muestra solo en pantallas medianas hacia arriba) -->
+    <!-- Buscador central (solo md en adelante) -->
     <form class="d-none d-md-flex flex-grow-1 justify-content-center mx-2">
       <input class="form-control w-50"
              type="search"
              placeholder="¿Qué desea encontrar?"
              aria-label="Buscar" />
     </form>
+
+    <!-- Icono de carrito -->
+    <a href="{% url 'cart_detail' %}" class="btn btn-outline-light ms-2">
+      🛒
+      {% if cart_total_items %}
+        <span class="badge bg-light text-primary ms-1">{{ cart_total_items }}</span>
+      {% endif %}
+    </a>
 
     <!-- Enlaces de autenticación -->
     <div class="d-flex align-items-center text-white ms-2">
@@ -53,34 +58,38 @@
   </div>
 </nav>
 
+{# MENSAJES FLASH BAJO LA BARRA #}
+{% if messages %}
+  <div class="container-fluid mt-2">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mb-2" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
 <!--
   Layout principal:
   - Columna izquierda: filtros (sidebar)
-  - Columna derecha: área donde se mostrarán productos
+  - Columna derecha: catálogo de productos
 -->
 <div class="container-fluid py-3">
   <div class="row">
 
-    <!--
-      Sidebar de filtros:
-      - Consola (select)
-      - Tipo (radios)
-      - Géneros (checkboxes)
-      - Precio (rangos min / max + botones)
-      Usamos bg-primary y text-white para asemejar el diseño original.
-    -->
+    <!-- Sidebar de filtros -->
     <aside class="col-12 col-md-4 col-lg-3 mb-3">
       <div class="p-3 bg-primary text-white rounded">
 
-        <!-- Filtro: Consola -->
+        <!-- Filtro: Consola (solo PlayStation) -->
         <div class="mb-4">
           <div class="fw-semibold mb-1">Consola</div>
           <select class="form-select form-select-sm">
             <option selected>Todas</option>
-            <option>PlayStation</option>
-            <option>Xbox</option>
-            <option>Nintendo</option>
-            <option>PC</option>
+            <option>PS3</option>
+            <option>PS4</option>
+            <option>PS5</option>
           </select>
         </div>
 
@@ -120,14 +129,10 @@
           </div>
         </div>
 
-        <!-- Filtro: Géneros-->
+        <!-- Filtro: Géneros -->
         <div class="mb-4">
           <div class="fw-semibold mb-1">Géneros</div>
 
-          <!--
-            Cada género es un checkbox independiente.
-            Puedes marcar todos los que quieras.
-          -->
           <div class="form-check">
             <input class="form-check-input"
                    type="checkbox"
@@ -228,7 +233,6 @@
             </label>
           </div>
 
-          <!-- Texto aclarando que se pueden elegir varias opciones -->
           <small class="d-block mt-1">
             Puedes seleccionar varios.
           </small>
@@ -239,27 +243,23 @@
           <div class="fw-semibold mb-1">Precio</div>
           <div class="row g-2 mb-2">
             <div class="col-6">
-              <!-- Campo para precio mínimo -->
               <input type="number"
                      class="form-control form-control-sm"
                      placeholder="min" />
             </div>
             <div class="col-6">
-              <!-- Campo para precio máximo -->
               <input type="number"
                      class="form-control form-control-sm"
                      placeholder="max" />
             </div>
           </div>
 
-          <!-- Botón para aplicar filtros (no funcional por ahora) -->
           <div class="d-grid mb-2">
             <button class="btn btn-success btn-sm" type="button">
               🔍 Aplicar filtros
             </button>
           </div>
 
-          <!-- Botón para limpiar filtros (no funcional por ahora) -->
           <div class="d-grid">
             <button class="btn btn-outline-light btn-sm" type="button">
               ✖ Limpiar
@@ -270,24 +270,17 @@
       </div>
     </aside>
 
-    <!--
-      Área principal:
-      - Por ahora solo muestra un mensaje de "Aún no hay productos".
-      - Más adelante aquí se renderizarán tarjetas de productos.
-    -->
-        <!-- Área principal -->
+    <!-- Área principal de productos -->
     <main class="col-12 col-md-8 col-lg-9 mb-3">
       {% if productos %}
-        <!-- Grid de tarjetas de productos -->
         <div class="row g-3">
           {% for producto in productos %}
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                <div class="card h-100 shadow-sm"
-                    onmouseover="this.classList.add('shadow')"
-                    onmouseout="this.classList.remove('shadow')">
-                
+              <div class="card h-100 shadow-sm"
+                   onmouseover="this.classList.add('shadow')"
+                   onmouseout="this.classList.remove('shadow')">
+
                 {% if producto.imagen %}
-                  <!-- Imagen del producto -->
                   <img src="{{ producto.imagen.url }}"
                        class="card-img-top"
                        alt="{{ producto.nombre }}"
@@ -296,12 +289,10 @@
 
                 <div class="card-body d-flex flex-column">
 
-                  <!-- Nombre del juego -->
                   <h5 class="card-title mb-1">
                     {{ producto.nombre }}
                   </h5>
 
-                  <!-- Año, consola, formato, estado -->
                   <p class="mb-1 small text-muted">
                     {{ producto.anio_lanzamiento|date:"Y" }}
                     · {{ producto.plataforma }}
@@ -309,24 +300,22 @@
                     · {{ producto.get_estado_display }}
                   </p>
 
-                  <!-- Géneros -->
                   <p class="mb-1 small text-muted">
                     {{ producto.generos.all|join:", " }}
                   </p>
 
-                  <!-- Descripción corta -->
                   <p class="card-text small mb-2">
                     {{ producto.descripcion|default:"Sin descripción."|truncatechars:110 }}
                   </p>
 
-                  <!-- Precio y botón (placeholder) -->
                   <div class="mt-auto d-flex justify-content-between align-items-center">
                     <span class="fw-bold fs-5">
                       ${{ producto.valor }}
                     </span>
-                    <button type="button" class="btn btn-sm btn-primary">
+                    <a href="{% url 'cart_add' producto.id %}"
+                       class="btn btn-sm btn-primary">
                       Agregar al carrito
-                    </button>
+                    </a>
                   </div>
 
                 </div>
@@ -335,7 +324,6 @@
           {% endfor %}
         </div>
       {% else %}
-        <!-- Mensaje cuando aún no hay productos -->
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
             <div class="mb-3" style="font-size: 3rem;">
@@ -355,10 +343,7 @@
   </div>
 </div>
 
-<!--
-  Offcanvas (panel lateral) para el "Panel administrativo".
-  Se abre al presionar el botón del navbar.
--->
+<!-- Offcanvas (panel administrativo) -->
 <div class="offcanvas offcanvas-start"
      tabindex="-1"
      id="adminPanel"
@@ -374,12 +359,10 @@
   </div>
 
   <div class="offcanvas-body">
-    <!-- Lista de enlaces administrativos -->
     <div class="list-group">
       <a href="/admin/" class="list-group-item list-group-item-action">
         Admin Django
       </a>
-      <!-- Enlace a nuestra vista product_list -->
       <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action">
         Productos
       </a>
@@ -388,3 +371,5 @@
 </div>
 
 {% endblock %}
+
+

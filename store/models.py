@@ -1,92 +1,169 @@
+# store/models.py
+import datetime
+from decimal import Decimal
+
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Genero(models.Model):
-    """
-    Género de juego (Acción, Aventura, etc.).
-    Permite que un producto tenga varios géneros.
-    """
-    nombre = models.CharField(max_length=100, unique=True)
+    nombre = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name="Nombre del género",
+    )
 
-    def __str__(self):
+    class Meta:
+        ordering = ["nombre"]
+
+    def __str__(self) -> str:
         return self.nombre
 
 
+PLATAFORMA_CHOICES = [
+    ("PS3", "PS3"),
+    ("PS4", "PS4"),
+    ("PS5", "PS5"),
+]
+
+FORMATO_CHOICES = [
+    ("FISICO", "Físico"),
+    ("DIGITAL", "Digital"),
+]
+
+ESTADO_CHOICES = [
+    ("NUEVO", "Nuevo"),
+    ("USADO", "Usado"),
+]
+
+
 class Producto(models.Model):
-    """
-    Modelo principal de productos de la tienda.
-    """
+    nombre = models.CharField(
+        max_length=150,
+        verbose_name="Nombre del juego",
+    )
 
-    # Opciones fijas para la plataforma
-    PLATAFORMA_PS3 = "PS3"
-    PLATAFORMA_PS4 = "PS4"
-    PLATAFORMA_PS5 = "PS5"
-
-    PLATAFORMA_CHOICES = [
-        (PLATAFORMA_PS3, "PS3"),
-        (PLATAFORMA_PS4, "PS4"),
-        (PLATAFORMA_PS5, "PS5"),
-    ]
-
-    # FORMATO: físico / digital
-    FORMATO_FISICO = "fisico"
-    FORMATO_DIGITAL = "digital"
-
-    FORMATO_CHOICES = [
-        (FORMATO_FISICO, "Físico"),
-        (FORMATO_DIGITAL, "Digital"),
-    ]
-
-    # ESTADO: nuevo / usado
-    ESTADO_NUEVO = "nuevo"
-    ESTADO_USADO = "usado"
-
-    ESTADO_CHOICES = [
-        (ESTADO_NUEVO, "Nuevo"),
-        (ESTADO_USADO, "Usado"),
-    ]
-
-    nombre = models.CharField(max_length=200)
-
-    # AHORA ES UNA FECHA (ej: 2011-11-11)
-    anio_lanzamiento = models.DateField()
+    # Usamos DateField pero solo nos importa el año
+    anio_lanzamiento = models.DateField(
+        verbose_name="Año de lanzamiento",
+        help_text="Fecha aproximada de lanzamiento del juego.",
+    )
 
     plataforma = models.CharField(
         max_length=10,
         choices=PLATAFORMA_CHOICES,
+        verbose_name="Plataforma",
     )
 
     formato = models.CharField(
         max_length=10,
         choices=FORMATO_CHOICES,
+        verbose_name="Formato",
     )
 
     estado = models.CharField(
         max_length=10,
         choices=ESTADO_CHOICES,
-        default=ESTADO_NUEVO,
+        verbose_name="Estado",
     )
 
-    # VARIOS GÉNEROS (Acción, Aventura, etc.)
     generos = models.ManyToManyField(
         Genero,
         blank=True,
-        related_name="productos",
+        verbose_name="Géneros",
+        help_text="Puedes seleccionar uno o varios géneros.",
     )
 
-    descripcion = models.TextField(blank=True)
-    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    descripcion = models.TextField(
+        verbose_name="Descripción",
+        blank=True,
+        help_text="Descripción breve para el cliente.",
+    )
+
+    valor = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(Decimal("1000.00")),
+            MaxValueValidator(Decimal("100000000.00")),
+        ],
+        verbose_name="Precio",
+        help_text="Precio de venta en CLP (entre 1.000 y 100.000.000).",
+    )
+
+    stock = models.PositiveIntegerField(
+        default=0,
+        validators=[MaxValueValidator(100000)],
+        verbose_name="Stock",
+        help_text="Cantidad disponible (0 a 100.000).",
+    )
 
     imagen = models.ImageField(
         upload_to="productos/",
-        blank=True,
         null=True,
+        blank=True,
+        verbose_name="Imagen del producto",
     )
-
-    stock = models.PositiveIntegerField(default=0)
 
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.nombre
+    class Meta:
+        ordering = ["-creado_en"]
+        # Evita duplicar el mismo juego en la misma plataforma
+        constraints = [
+            models.UniqueConstraint(
+                fields=["nombre", "plataforma", "formato", "estado"],
+                name="unique_producto_por_plataforma_formato_estado",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.nombre} ({self.plataforma})"
+
+    # ---- Validación de negocio extra (a nivel de modelo) ----
+    def clean(self):
+        """
+        Validaciones adicionales de negocio.
+        Se ejecutan al llamar a full_clean() (Django admin y ModelForm).
+        """
+        super().clean()
+
+        hoy = datetime.date.today()
+
+        # Solo validamos si anio_lanzamiento tiene un valor
+        if self.anio_lanzamiento:
+            # 1) Año de lanzamiento no puede ser futuro
+            if self.anio_lanzamiento > hoy:
+                from django.core.exceptions import ValidationError
+
+                raise ValidationError(
+                    {
+                        "anio_lanzamiento": "El año de lanzamiento no puede ser una fecha futura."
+                    }
+                )
+
+            # 2) Año de lanzamiento razonable para videojuegos
+            if self.anio_lanzamiento.year < 1970:
+                from django.core.exceptions import ValidationError
+
+                raise ValidationError(
+                    {
+                        "anio_lanzamiento": "El año de lanzamiento debe ser 1970 o posterior."
+                    }
+                )
+
+        # 3) Si el formato es físico, exigir stock > 0 al crear
+        if self.formato == "FISICO" and self.stock == 0:
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError(
+                {"stock": "Para productos físicos, el stock debe ser mayor a 0."}
+            )
+
+        # 4) Valor mínimo por lógica de negocio
+        if self.valor is not None and self.valor <= 0:
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError({"valor": "El precio debe ser mayor a 0."})
+
