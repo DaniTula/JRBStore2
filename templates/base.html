@@ -16,7 +16,6 @@
 </head>
 
 <body class="bg-light">
-  {# OJO: los mensajes se renderizan en cada template (home, carrito, etc.) #}
   {% block content %}{% endblock %}
 
   <script
@@ -25,7 +24,7 @@
     crossorigin="anonymous">
   </script>
 
-  {# Hace que las alertas Bootstrap se cierren solas después de 3 segundos #}
+  <!-- Hace que las alertas Bootstrap se cierren solas después de 3 segundos -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       const alerts = document.querySelectorAll('.alert.alert-dismissible');
@@ -51,6 +50,7 @@
   {% block extra_js %}{% endblock %}
 </body>
 </html>
+
 
 
 

@@ -1,39 +1,140 @@
 # store/views.py
 from django.shortcuts import render, get_object_or_404, redirect
+from django.db.models import Q
 from django.contrib import messages
-
-from .models import Producto
+from .models import Producto, Genero
 from .cart import Cart
 from .forms import ProductoForm
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from .forms import ProductoForm, UserRegisterForm, UserLoginForm
 
 
-# ----------------------------- CATÁLOGO / HOME -----------------------------
+# ---------------------------------------------------------------------------
+#  Choices locales para filtros (deben coincidir con lo que guarda tu modelo)
+# ---------------------------------------------------------------------------
+PLATAFORMA_CHOICES = [
+    ("PS3", "PS3"),
+    ("PS4", "PS4"),
+    ("PS5", "PS5"),
+]
+
+FORMATO_CHOICES = [
+    ("FISICO", "Físico"),
+    ("DIGITAL", "Digital"),
+]
 
 
+# ---------------------------------------------------------------------------
+#  PÁGINA PRINCIPAL (CATÁLOGO + BÚSQUEDA + FILTROS)
+# ---------------------------------------------------------------------------
 def home(request):
     """
     Página principal de la tienda.
-    Muestra el catálogo de productos disponibles.
+
+    Permite:
+    - Buscar por nombre / descripción (parámetro GET: q).
+    - Filtrar por plataforma (plataforma).
+    - Filtrar por tipo/formato (tipo).
+    - Filtrar por uno o varios géneros (generos).
+    - Filtrar por rango de precio (precio_min / precio_max).
     """
+
     productos = Producto.objects.all().order_by("-creado_en")
+
+    # -------------------- Leer parámetros GET --------------------
+    q = request.GET.get("q", "").strip()
+    plataforma = request.GET.get("plataforma", "").strip()
+    tipo = request.GET.get("tipo", "").strip()
+    genero_ids_raw = request.GET.getlist("generos")
+    precio_min_raw = request.GET.get("precio_min", "").strip()
+    precio_max_raw = request.GET.get("precio_max", "").strip()
+
+    # -------------------- Búsqueda (texto libre) --------------------
+    if q:
+        productos = productos.filter(
+            Q(nombre__icontains=q) | Q(descripcion__icontains=q)
+        )
+
+    # -------------------- Filtro: plataforma --------------------
+    valid_plataformas = {code for code, _ in PLATAFORMA_CHOICES}
+    if plataforma and plataforma in valid_plataformas:
+        productos = productos.filter(plataforma=plataforma)
+    else:
+        plataforma = ""  # valor limpio para el template
+
+    # -------------------- Filtro: tipo / formato --------------------
+    valid_tipos = {code for code, _ in FORMATO_CHOICES}
+    if tipo and tipo in valid_tipos:
+        productos = productos.filter(formato=tipo)
+    else:
+        tipo = ""
+
+    # -------------------- Filtro: géneros (múltiples) --------------------
+    selected_generos = []
+    if genero_ids_raw:
+        try:
+            genero_ids = [int(g) for g in genero_ids_raw if g.isdigit()]
+        except ValueError:
+            genero_ids = []
+        if genero_ids:
+            productos = productos.filter(generos__id__in=genero_ids).distinct()
+            selected_generos = genero_ids
+
+    # -------------------- Filtro: rango de precio --------------------
+    def parse_price(value: str):
+        """
+        Convierte string a entero >= 0.
+        Devuelve None si no es válido.
+        """
+        try:
+            v = int(value)
+            return v if v >= 0 else 0
+        except (TypeError, ValueError):
+            return None
+
+    precio_min = parse_price(precio_min_raw) if precio_min_raw else None
+    precio_max = parse_price(precio_max_raw) if precio_max_raw else None
+
+    # Si el usuario pone min > max, los invertimos para que tenga sentido.
+    if precio_min is not None and precio_max is not None and precio_min > precio_max:
+        precio_min, precio_max = precio_max, precio_min
+
+    if precio_min is not None:
+        productos = productos.filter(valor__gte=precio_min)
+    if precio_max is not None:
+        productos = productos.filter(valor__lte=precio_max)
+
+    # -------------------- Datos para el template --------------------
+    filters = {
+        "q": q,
+        "plataforma": plataforma,
+        "tipo": tipo,
+        "generos": selected_generos,
+        "precio_min": precio_min_raw,
+        "precio_max": precio_max_raw,
+    }
+
     context = {
         "productos": productos,
+        "plataformas": PLATAFORMA_CHOICES,
+        "formatos": FORMATO_CHOICES,
+        "generos_disponibles": Genero.objects.all().order_by("nombre"),
+        "filters": filters,
     }
     return render(request, "store/home.html", context)
 
 
-# --------------------------- ADMIN PRODUCTOS ---------------------------
-
-
+# ---------------------------------------------------------------------------
+#  MÓDULO DE STOCK / CRUD DE PRODUCTOS (PANEL ADMIN)
+# ---------------------------------------------------------------------------
 def producto_list(request):
     """
     Vista de administración de productos (módulo de stock).
     Muestra una tabla con todos los productos y botones para crear/editar/eliminar.
     """
     productos = Producto.objects.all().order_by("id")
-    context = {
-        "productos": productos,
-    }
+    context = {"productos": productos}
     return render(request, "store/product_list.html", context)
 
 
@@ -45,9 +146,8 @@ def producto_create(request):
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            # Podríamos mostrar un mensaje interno para el admin si quieres
-            # messages.success(request, "Producto creado correctamente.")
+            producto = form.save()
+            messages.success(request, f"Producto '{producto.nombre}' creado correctamente.")
             return redirect("product_list")
     else:
         form = ProductoForm()
@@ -68,8 +168,8 @@ def producto_edit(request, pk):
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES, instance=producto)
         if form.is_valid():
-            form.save()
-            # messages.success(request, "Producto actualizado correctamente.")
+            producto = form.save()
+            messages.success(request, f"Producto '{producto.nombre}' actualizado correctamente.")
             return redirect("product_list")
     else:
         form = ProductoForm(instance=producto)
@@ -89,19 +189,18 @@ def producto_delete(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
 
     if request.method == "POST":
+        nombre = producto.nombre
         producto.delete()
-        # messages.info(request, "Producto eliminado.")
+        messages.info(request, f"Producto '{nombre}' eliminado correctamente.")
         return redirect("product_list")
 
-    context = {
-        "producto": producto,
-    }
+    context = {"producto": producto}
     return render(request, "store/product_confirm_delete.html", context)
 
 
-# --------------------------- CARRITO DE COMPRAS ---------------------------
-
-
+# ---------------------------------------------------------------------------
+#  CARRITO DE COMPRAS
+# ---------------------------------------------------------------------------
 def cart_detail(request):
     """
     Muestra el carrito de compras:
@@ -114,15 +213,17 @@ def cart_detail(request):
     total_products = cart.get_total_price()
     shipping = 0
     if total_products > 0:
-        shipping = 3000  # por ejemplo, envío fijo
+        # Envío fijo de ejemplo
+        shipping = 3000
+
     grand_total = total_products + shipping
 
-    # Aviso general si hay productos con problemas
-    if any(i["missing"] or i["insufficient_stock"] for i in items):
+    # Si hay productos con problemas, se muestra un aviso general
+    if any(i.get("missing") or i.get("insufficient_stock") for i in items):
         messages.warning(
             request,
             "Algunos productos del carrito ya no están disponibles o no tienen stock. "
-            "Revise los mensajes junto a cada producto antes de continuar.",
+            "Revisa los mensajes junto a cada producto antes de continuar.",
         )
 
     context = {
@@ -130,7 +231,7 @@ def cart_detail(request):
         "total_products": total_products,
         "shipping": shipping,
         "grand_total": grand_total,
-        "quantity_range": range(1, 11),  # para el select de cantidad (1 a 10)
+        "quantity_range": range(1, 11),  # para el select de cantidad (1..10)
     }
     return render(request, "store/cart_detail.html", context)
 
@@ -138,20 +239,23 @@ def cart_detail(request):
 def cart_add(request, product_id):
     """
     Agrega un producto al carrito (cantidad por defecto 1).
-    No muestra mensaje de éxito, solo errores cuando no hay stock.
     """
     cart = Cart(request)
     producto = get_object_or_404(Producto, id=product_id)
 
-    # Validación seria: no permitir agregar si no hay stock
-    if producto.stock <= 0:
-        messages.error(request, f"'{producto.nombre}' no tiene stock disponible.")
+    # Validación de stock
+    if producto.stock < 1:
+        messages.warning(
+            request,
+            f"El producto '{producto.nombre}' ya no tiene stock disponible."
+        )
         return redirect("cart_detail")
 
-    # Por ahora cantidad fija 1 (se puede editar en el carrito)
-    cart.add(producto, quantity=1)
+    quantity = 1
+    # 👇 AQUÍ EL CAMBIO IMPORTANTE: usar `producto` como parámetro POSICIONAL
+    cart.add(producto, quantity=quantity)
 
-    # OJO: sin messages.success → no aparecerá el mensaje verde
+    # Sin mensaje de éxito estridente
     return redirect("cart_detail")
 
 
@@ -169,13 +273,13 @@ def cart_remove(request, product_id):
 def cart_remove_by_id(request, product_id):
     """
     Elimina un ítem del carrito sin consultar a la BD.
-    Sirve cuando el producto ya fue borrado.
+    Se usa cuando el producto ya fue borrado de la base de datos.
     """
     cart = Cart(request)
     cart.remove_by_id(product_id)
     messages.info(
         request,
-        "Un producto eliminado ya no está disponible y se quitó del carrito.",
+        "Un producto que ya no existe en la tienda fue eliminado del carrito.",
     )
     return redirect("cart_detail")
 
@@ -183,8 +287,6 @@ def cart_remove_by_id(request, product_id):
 def cart_update(request, product_id):
     """
     Actualiza la cantidad de un producto desde el carrito.
-    - Si la cantidad es 0 o negativa, se elimina del carrito.
-    - Si supera el stock, se ajusta al máximo disponible.
     """
     cart = Cart(request)
     producto = get_object_or_404(Producto, id=product_id)
@@ -207,7 +309,81 @@ def cart_update(request, product_id):
             "Se ajustó la cantidad en el carrito.",
         )
 
+    # 👇 También aquí: parámetro posicional
     cart.add(producto, quantity=quantity, override_quantity=True)
     return redirect("cart_detail")
+
+
+# --------------------------- AUTENTICACIÓN Y CUENTA ---------------------------
+
+def register(request):
+    """
+    Registro de nuevos clientes.
+    Crea un usuario y lo inicia sesión automáticamente.
+    """
+    if request.user.is_authenticated:
+        return redirect("account_dashboard")
+
+    if request.method == "POST":
+        form = UserRegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(
+                request,
+                f"Bienvenido/a, {user.get_full_name() or user.username}. "
+                "Tu cuenta ha sido creada correctamente."
+            )
+            return redirect("account_dashboard")
+    else:
+        form = UserRegisterForm()
+
+    return render(request, "accounts/register.html", {"form": form})
+
+
+def login_view(request):
+    """
+    Inicio de sesión de usuarios existentes.
+    """
+    if request.user.is_authenticated:
+        return redirect("account_dashboard")
+
+    if request.method == "POST":
+        form = UserLoginForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            messages.success(
+                request,
+                f"Bienvenido de nuevo, {user.get_full_name() or user.username}."
+            )
+            next_url = request.GET.get("next") or "account_dashboard"
+            return redirect(next_url)
+    else:
+        form = UserLoginForm(request)
+
+    return render(request, "accounts/login.html", {"form": form})
+
+
+@login_required
+def logout_view(request):
+    """
+    Cierre de sesión.
+    """
+    logout(request)
+    messages.info(request, "Has cerrado sesión correctamente.")
+    return redirect("home")
+
+
+@login_required
+def account_dashboard(request):
+    """
+    Panel de cuenta.
+    - Si es staff/admin: muestra accesos rápidos al panel de gestión.
+    - Si es cliente: resumen simple de su cuenta.
+    """
+    return render(request, "accounts/dashboard.html", {})
+
+
 
 

@@ -22,4 +22,10 @@ urlpatterns = [
         name="cart_remove_by_id",
     ),
     path("carrito/actualizar/<int:product_id>/", views.cart_update, name="cart_update"),
+    
+     # Autenticación / cuenta
+    path("accounts/login/", views.login_view, name="login"),
+    path("accounts/logout/", views.logout_view, name="logout"),
+    path("accounts/registro/", views.register, name="register"),
+    path("mi-cuenta/", views.account_dashboard, name="account_dashboard"),
 ]

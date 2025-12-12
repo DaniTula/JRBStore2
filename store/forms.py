@@ -1,11 +1,9 @@
-
 import datetime
 from decimal import Decimal
-
 from django import forms
-
 from .models import Producto, Genero
-
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.models import User
 
 class ProductoForm(forms.ModelForm):
     anio_lanzamiento = forms.DateField(
@@ -129,3 +127,57 @@ class ProductoForm(forms.ModelForm):
             )
 
         return cleaned_data
+    
+
+class UserRegisterForm(UserCreationForm):
+
+    email = forms.EmailField(
+        required=True,
+        label="Correo electrónico",
+        widget=forms.EmailInput(attrs={"class": "form-control"})
+    )
+    first_name = forms.CharField(
+        required=False,
+        label="Nombre",
+        widget=forms.TextInput(attrs={"class": "form-control"})
+    )
+    last_name = forms.CharField(
+        required=False,
+        label="Apellidos",
+        widget=forms.TextInput(attrs={"class": "form-control"})
+    )
+
+    class Meta:
+        model = User
+        fields = ("username", "email", "first_name", "last_name", "password1", "password2")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Bootstrap a todos los campos
+        for field in self.fields.values():
+            if not field.widget.attrs.get("class"):
+                field.widget.attrs["class"] = "form-control"
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].lower()
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Ya existe un usuario registrado con este correo.")
+        return email
+
+
+class UserLoginForm(AuthenticationForm):
+    """
+    Formulario de login con estilos Bootstrap.
+    """
+    username = forms.CharField(
+        label="Usuario o correo",
+        widget=forms.TextInput(
+            attrs={"class": "form-control", "placeholder": "Ingresa tu usuario o correo", "autofocus": True}
+        ),
+    )
+    password = forms.CharField(
+        label="Contraseña",
+        widget=forms.PasswordInput(
+            attrs={"class": "form-control", "placeholder": "Ingresa tu contraseña"}
+        ),
+    )

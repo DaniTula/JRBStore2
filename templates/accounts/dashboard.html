@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Mi cuenta - JRBStore2{% endblock %}
+
+{% block content %}
+
+<nav class="navbar navbar-dark bg-primary py-1">
+  <div class="container-fluid px-2">
+    <a class="navbar-brand fw-bold fs-5" href="{% url 'home' %}">
+      JRBStore
+    </a>
+    <span class="navbar-text text-white">
+      Panel de cuenta
+    </span>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="row">
+    <div class="col-12 col-lg-4 mb-3">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="card-title mb-2">Datos del usuario</h5>
+          <p class="mb-1"><strong>Nombre:</strong> {{ user.get_full_name|default:"(sin nombre)" }}</p>
+          <p class="mb-1"><strong>Usuario:</strong> {{ user.username }}</p>
+          <p class="mb-1"><strong>Correo:</strong> {{ user.email }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-8 mb-3">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          {% if user.is_staff %}
+            <h5 class="card-title mb-3">Panel administrativo</h5>
+            <p class="text-muted">
+              Tienes permisos de administración. Desde aquí puedes acceder a la gestión de la tienda.
+            </p>
+            <a href="{% url 'product_list' %}" class="btn btn-primary me-2 mb-2">
+              Gestionar productos
+            </a>
+            <a href="/admin/" class="btn btn-outline-secondary mb-2">
+              Admin Django
+            </a>
+          {% else %}
+            <h5 class="card-title mb-3">Resumen de cliente</h5>
+            <p class="text-muted">
+              En el futuro aquí podrás ver tus pedidos, direcciones de envío y métodos de pago.
+            </p>
+            <a href="{% url 'cart_detail' %}" class="btn btn-primary">
+              Ver carrito actual
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

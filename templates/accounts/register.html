@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Crear cuenta - JRBStore2{% endblock %}
+
+{% block content %}
+<div class="bg-light py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6">
+
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white border-0">
+            <h5 class="mb-0">Crear cuenta en JRBStore</h5>
+            <small class="text-white-50">
+              Regístrate para gestionar tus compras y ver tu historial.
+            </small>
+          </div>
+
+          <div class="card-body">
+
+            {# Errores no relacionados a un campo concreto #}
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <form method="post" novalidate>
+              {% csrf_token %}
+
+              {# Recorremos los campos para mostrar etiquetas, inputs y errores bonitos #}
+              {% for field in form %}
+                <div class="mb-3">
+                  <label class="form-label" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                  </label>
+                  {{ field }}
+
+                  {% if field.help_text %}
+                    <div class="form-text">
+                      {{ field.help_text|safe }}
+                    </div>
+                  {% endif %}
+
+                  {% if field.errors %}
+                    <div class="text-danger small">
+                      {{ field.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary">
+                  Crear cuenta
+                </button>
+              </div>
+            </form>
+
+          </div>
+
+          <div class="card-footer bg-white text-center">
+            <small class="text-muted">
+              ¿Ya tienes una cuenta?
+              <a href="{% url 'login' %}">Inicia sesión aquí</a>.
+            </small>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

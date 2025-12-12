@@ -4,372 +4,472 @@
 
 {% block content %}
 
-<!--
-  Barra de navegación principal:
-  - Menú lateral (offcanvas)
-  - Logo / nombre de la tienda
-  - Buscador central
-  - Icono carrito
-  - Enlaces "Iniciar sesión / Registrarse"
--->
-<nav class="navbar navbar-dark bg-primary py-1">
-  <div class="container-fluid px-2">
+{# ===================== NAVBAR PRINCIPAL ===================== #}
+<nav class="navbar navbar-expand-md navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid px-3 px-md-4">
 
-    <!-- Botón que abre el panel administrativo (offcanvas) -->
-    <button class="btn btn-outline-light me-2"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#adminPanel"
-            aria-controls="adminPanel">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+    <!-- Botón panel administrativo -->
+    {# Botón panel administrativo: solo staff / superuser #}
+    
+    {% if user.is_staff or user.is_superuser %}
+      <button class="btn btn-outline-light me-2"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#adminPanel"
+              aria-controls="adminPanel">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    {% endif %}
 
-    <!-- Nombre de la tienda -->
-    <a class="navbar-brand fw-bold fs-5 me-2" href="{% url 'home' %}">
+
+    <!-- Logo / nombre -->
+    <a class="navbar-brand fw-bold" href="{% url 'home' %}">
       JRBStore
     </a>
 
-    <!-- Buscador central (solo md en adelante) -->
-    <form class="d-none d-md-flex flex-grow-1 justify-content-center mx-2">
-      <input class="form-control w-50"
-             type="search"
-             placeholder="¿Qué desea encontrar?"
-             aria-label="Buscar" />
-    </form>
+    <!-- Hamburguesa -->
+    <button class="navbar-toggler" type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNavbar"
+            aria-controls="mainNavbar"
+            aria-expanded="false"
+            aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-    <!-- Icono de carrito -->
-    <a href="{% url 'cart_detail' %}" class="btn btn-outline-light ms-2">
-      🛒
-      {% if cart_total_items %}
-        <span class="badge bg-light text-primary ms-1">{{ cart_total_items }}</span>
-      {% endif %}
-    </a>
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <!-- Buscador centrado -->
+      <form class="d-flex flex-grow-1 justify-content-center my-2 my-md-0"
+            method="get"
+            action="{% url 'home' %}">
+        <div class="input-group input-group-sm" style="max-width: 520px;">
+          <input class="form-control"
+                 type="search"
+                 name="q"
+                 value="{{ filters.q }}"
+                 placeholder="Buscar juegos por nombre o descripción"
+                 aria-label="Buscar" />
+          <button class="btn btn-light" type="submit">
+            Buscar
+          </button>
+        </div>
 
-    <!-- Enlaces de autenticación -->
-    <div class="d-flex align-items-center text-white ms-2">
-      <a href="#" class="text-white text-decoration-none me-1">
-        Iniciar sesión
-      </a>
-      <span class="mx-1">/</span>
-      <a href="#" class="text-white text-decoration-none ms-1">
-        Registrarse
-      </a>
+        {# Preservar filtros al buscar #}
+        {% if filters.plataforma %}
+          <input type="hidden" name="plataforma" value="{{ filters.plataforma }}">
+        {% endif %}
+        {% if filters.tipo %}
+          <input type="hidden" name="tipo" value="{{ filters.tipo }}">
+        {% endif %}
+        {% for g_id in filters.generos %}
+          <input type="hidden" name="generos" value="{{ g_id }}">
+        {% endfor %}
+        {% if filters.precio_min %}
+          <input type="hidden" name="precio_min" value="{{ filters.precio_min }}">
+        {% endif %}
+        {% if filters.precio_max %}
+          <input type="hidden" name="precio_max" value="{{ filters.precio_max }}">
+        {% endif %}
+      </form>
+
+      <!-- Carrito + login -->
+      <ul class="navbar-nav ms-md-3 align-items-center">
+        <li class="nav-item me-2">
+          <a href="{% url 'cart_detail' %}"
+             class="btn btn-outline-light btn-sm position-relative d-flex align-items-center justify-content-center"
+             style="width: 42px; height: 32px;">
+            <!-- Ícono del carrito -->
+            <span aria-hidden="true">🛒</span>
+            <!-- Texto solo para lectores de pantalla -->
+            <span class="visually-hidden">Carrito</span>
+
+            {% if cart_total_items %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ cart_total_items }}
+              </span>
+            {% endif %}
+          </a>
+        </li>
+
+        <!-- Enlaces de autenticación -->
+        <li class="nav-item ms-2">
+          <div class="d-flex align-items-center text-white small">
+            {% if user.is_authenticated %}
+              <span class="me-3">
+                Hola, <strong>{{ user.first_name|default:user.username }}</strong>
+              </span>
+
+              <a href="{% url 'account_dashboard' %}"
+                 class="text-white text-decoration-none me-3">
+                Mi cuenta
+              </a>
+
+              <form action="{% url 'logout' %}" method="post" class="d-inline mb-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-light">
+                  Cerrar sesión
+                </button>
+              </form>
+            {% else %}
+              <a href="{% url 'login' %}" class="text-white text-decoration-none me-2">
+                Iniciar sesión
+              </a>
+              <span class="mx-1">/</span>
+              <a href="{% url 'register' %}" class="text-white text-decoration-none ms-2">
+                Registrarse
+              </a>
+            {% endif %}
+          </div>
+        </li>
+      </ul>
     </div>
   </div>
 </nav>
 
-{# MENSAJES FLASH BAJO LA BARRA #}
-{% if messages %}
-  <div class="container-fluid mt-2">
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mb-2" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
+{# ===================== CONTENIDO PRINCIPAL ===================== #}
+<div class="bg-light py-3">
+  <div class="container-fluid px-3 px-md-4">
+    <div class="row g-3 g-lg-4">
 
-<!--
-  Layout principal:
-  - Columna izquierda: filtros (sidebar)
-  - Columna derecha: catálogo de productos
--->
-<div class="container-fluid py-3">
-  <div class="row">
-
-    <!-- Sidebar de filtros -->
-    <aside class="col-12 col-md-4 col-lg-3 mb-3">
-      <div class="p-3 bg-primary text-white rounded">
-
-        <!-- Filtro: Consola (solo PlayStation) -->
-        <div class="mb-4">
-          <div class="fw-semibold mb-1">Consola</div>
-          <select class="form-select form-select-sm">
-            <option selected>Todas</option>
-            <option>PS3</option>
-            <option>PS4</option>
-            <option>PS5</option>
-          </select>
-        </div>
-
-        <!-- Filtro: Tipo -->
-        <div class="mb-4">
-          <div class="fw-semibold mb-2">Tipo</div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="radio"
-                   name="tipo"
-                   id="tipoTodos"
-                   checked />
-            <label class="form-check-label" for="tipoTodos">
-              Todos
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="radio"
-                   name="tipo"
-                   id="tipoFisico" />
-            <label class="form-check-label" for="tipoFisico">
-              Físico
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="radio"
-                   name="tipo"
-                   id="tipoDigital" />
-            <label class="form-check-label" for="tipoDigital">
-              Digital/llave
-            </label>
-          </div>
-        </div>
-
-        <!-- Filtro: Géneros -->
-        <div class="mb-4">
-          <div class="fw-semibold mb-1">Géneros</div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="accion"
-                   id="genAccion">
-            <label class="form-check-label" for="genAccion">
-              Acción
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="aventura"
-                   id="genAventura">
-            <label class="form-check-label" for="genAventura">
-              Aventura
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="battle-royale"
-                   id="genBattleRoyale">
-            <label class="form-check-label" for="genBattleRoyale">
-              Battle Royale
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="carreras"
-                   id="genCarreras">
-            <label class="form-check-label" for="genCarreras">
-              Carreras
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="deportes"
-                   id="genDeportes">
-            <label class="form-check-label" for="genDeportes">
-              Deportes
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="estrategia"
-                   id="genEstrategia">
-            <label class="form-check-label" for="genEstrategia">
-              Estrategia
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="hack-and-slash"
-                   id="genHackSlash">
-            <label class="form-check-label" for="genHackSlash">
-              Hack and Slash
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="rpg"
-                   id="genRpg">
-            <label class="form-check-label" for="genRpg">
-              RPG
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="shooter"
-                   id="genShooter">
-            <label class="form-check-label" for="genShooter">
-              Shooter
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="terror"
-                   id="genTerror">
-            <label class="form-check-label" for="genTerror">
-              Terror
-            </label>
-          </div>
-
-          <small class="d-block mt-1">
-            Puedes seleccionar varios.
-          </small>
-        </div>
-
-        <!-- Filtro: Precio -->
-        <div class="mb-3">
-          <div class="fw-semibold mb-1">Precio</div>
-          <div class="row g-2 mb-2">
-            <div class="col-6">
-              <input type="number"
-                     class="form-control form-control-sm"
-                     placeholder="min" />
-            </div>
-            <div class="col-6">
-              <input type="number"
-                     class="form-control form-control-sm"
-                     placeholder="max" />
+      {# ---------- SIDEBAR FILTROS ---------- #}
+      <aside class="col-12 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-0 fw-semibold">Filtrar resultados</h6>
+                <small class="text-muted">Acota la búsqueda según tus preferencias</small>
+              </div>
+              <a href="{% url 'home' %}"
+                 class="small text-decoration-none text-primary">
+                Limpiar
+              </a>
             </div>
           </div>
 
-          <div class="d-grid mb-2">
-            <button class="btn btn-success btn-sm" type="button">
-              🔍 Aplicar filtros
-            </button>
-          </div>
+          <div class="card-body pt-3">
+            <form method="get" action="{% url 'home' %}">
+              <div class="accordion accordion-flush" id="filtersAccordion">
 
-          <div class="d-grid">
-            <button class="btn btn-outline-light btn-sm" type="button">
-              ✖ Limpiar
-            </button>
+                {# Consola #}
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingPlataforma">
+                    <button class="accordion-button collapsed py-2"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapsePlataforma"
+                            aria-expanded="true"
+                            aria-controls="collapsePlataforma">
+                      Consola
+                    </button>
+                  </h2>
+                  <div id="collapsePlataforma"
+                       class="accordion-collapse collapse show"
+                       data-bs-parent="#filtersAccordion">
+                    <div class="accordion-body px-0 pt-2">
+                      <select class="form-select form-select-sm" name="plataforma">
+                        <option value="">Todas</option>
+                        {% for code, label in plataformas %}
+                          <option value="{{ code }}"
+                                  {% if filters.plataforma == code %}selected{% endif %}>
+                            {{ label }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {# Tipo / Formato #}
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingTipo">
+                    <button class="accordion-button collapsed py-2"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseTipo"
+                            aria-expanded="false"
+                            aria-controls="collapseTipo">
+                      Tipo de producto
+                    </button>
+                  </h2>
+                  <div id="collapseTipo"
+                       class="accordion-collapse collapse"
+                       data-bs-parent="#filtersAccordion">
+                    <div class="accordion-body px-0 pt-2">
+                      <div class="form-check mb-1">
+                        <input class="form-check-input"
+                               type="radio"
+                               name="tipo"
+                               id="tipoTodos"
+                               value=""
+                               {% if not filters.tipo %}checked{% endif %}>
+                        <label class="form-check-label" for="tipoTodos">
+                          Todos
+                        </label>
+                      </div>
+
+                      {% for code, label in formatos %}
+                        <div class="form-check mb-1">
+                          <input class="form-check-input"
+                                 type="radio"
+                                 name="tipo"
+                                 id="tipo{{ code }}"
+                                 value="{{ code }}"
+                                 {% if filters.tipo == code %}checked{% endif %}>
+                          <label class="form-check-label" for="tipo{{ code }}">
+                            {{ label }}
+                          </label>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+
+                {# Géneros #}
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingGeneros">
+                    <button class="accordion-button collapsed py-2"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseGeneros"
+                            aria-expanded="false"
+                            aria-controls="collapseGeneros">
+                      Géneros
+                    </button>
+                  </h2>
+                  <div id="collapseGeneros"
+                       class="accordion-collapse collapse"
+                       data-bs-parent="#filtersAccordion">
+                    <div class="accordion-body px-0 pt-2"
+                         style="max-height: 260px; overflow-y: auto;">
+                      {% for genero in generos_disponibles %}
+                        <div class="form-check mb-1">
+                          <input class="form-check-input"
+                                 type="checkbox"
+                                 name="generos"
+                                 value="{{ genero.id }}"
+                                 id="gen{{ genero.id }}"
+                                 {% if genero.id in filters.generos %}checked{% endif %}>
+                          <label class="form-check-label" for="gen{{ genero.id }}">
+                            {{ genero.nombre }}
+                          </label>
+                        </div>
+                      {% endfor %}
+                      <small class="d-block mt-1 text-muted">
+                        Puedes seleccionar uno o varios.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                {# Precio #}
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingPrecio">
+                    <button class="accordion-button collapsed py-2"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapsePrecio"
+                            aria-expanded="false"
+                            aria-controls="collapsePrecio">
+                      Rango de precio
+                    </button>
+                  </h2>
+                  <div id="collapsePrecio"
+                       class="accordion-collapse collapse"
+                       data-bs-parent="#filtersAccordion">
+                    <div class="accordion-body px-0 pt-2">
+                      <div class="row g-2 mb-1">
+                        <div class="col-6">
+                          <input type="number"
+                                 class="form-control form-control-sm"
+                                 name="precio_min"
+                                 min="0"
+                                 placeholder="Mín"
+                                 value="{{ filters.precio_min }}">
+                        </div>
+                        <div class="col-6">
+                          <input type="number"
+                                 class="form-control form-control-sm"
+                                 name="precio_max"
+                                 min="0"
+                                 placeholder="Máx"
+                                 value="{{ filters.precio_max }}">
+                        </div>
+                      </div>
+                      <small class="text-muted">
+                        Valores en CLP.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+              </div> {# /accordion #}
+
+              <div class="mt-3">
+                <button class="btn btn-primary w-100 btn-sm mb-2" type="submit">
+                  Aplicar filtros
+                </button>
+                <a href="{% url 'home' %}"
+                   class="btn btn-outline-secondary w-100 btn-sm">
+                  Quitar filtros
+                </a>
+              </div>
+            </form>
           </div>
         </div>
+      </aside>
 
-      </div>
-    </aside>
+      {# ---------- CATÁLOGO PRODUCTOS ---------- #}
+      <main class="col-12 col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="mb-0 fw-semibold">Catálogo de juegos</h5>
+            <small class="text-muted">
+              {{ productos|length }} resultado{{ productos|length|pluralize }}
+              {% if filters.q %}
+                para "<span class="fw-semibold">{{ filters.q }}</span>"
+              {% endif %}
+            </small>
+          </div>
 
-    <!-- Área principal de productos -->
-    <main class="col-12 col-md-8 col-lg-9 mb-3">
-      {% if productos %}
-        <div class="row g-3">
-          {% for producto in productos %}
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-              <div class="card h-100 shadow-sm"
-                   onmouseover="this.classList.add('shadow')"
-                   onmouseout="this.classList.remove('shadow')">
+          {% if filters.plataforma or filters.tipo or filters.generos or filters.precio_min or filters.precio_max %}
+            <div class="text-end small">
+              <span class="text-muted me-1">Filtros activos:</span>
+              {% if filters.plataforma %}
+                <span class="badge bg-light text-dark border me-1">
+                  {{ filtros_humanos.plataforma }}
+                </span>
+              {% endif %}
+              {% if filters.tipo %}
+                <span class="badge bg-light text-dark border me-1">
+                  {{ filtros_humanos.tipo }}
+                </span>
+              {% endif %}
+              {% for g in filtros_humanos.generos %}
+                <span class="badge bg-light text-dark border me-1">
+                  {{ g }}
+                </span>
+              {% endfor %}
+              {% if filters.precio_min or filters.precio_max %}
+                <span class="badge bg-light text-dark border">
+                  {{ filtros_humanos.precio }}
+                </span>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
 
-                {% if producto.imagen %}
-                  <img src="{{ producto.imagen.url }}"
-                       class="card-img-top"
-                       alt="{{ producto.nombre }}"
-                       style="height: 200px; object-fit: cover;">
-                {% endif %}
+        {% if productos %}
+          <div class="row g-3">
+            {% for producto in productos %}
+              <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm rounded-3">
 
-                <div class="card-body d-flex flex-column">
+                  {% if producto.imagen %}
+                    <img src="{{ producto.imagen.url }}"
+                         class="card-img-top"
+                         alt="{{ producto.nombre }}"
+                         style="height: 190px; object-fit: cover;">
+                  {% endif %}
 
-                  <h5 class="card-title mb-1">
-                    {{ producto.nombre }}
-                  </h5>
+                  <div class="card-body d-flex flex-column">
 
-                  <p class="mb-1 small text-muted">
-                    {{ producto.anio_lanzamiento|date:"Y" }}
-                    · {{ producto.plataforma }}
-                    · {{ producto.get_formato_display }}
-                    · {{ producto.get_estado_display }}
-                  </p>
+                    <h6 class="card-title mb-1 text-truncate"
+                        title="{{ producto.nombre }}">
+                      {{ producto.nombre }}
+                    </h6>
 
-                  <p class="mb-1 small text-muted">
-                    {{ producto.generos.all|join:", " }}
-                  </p>
+                    <p class="mb-1 small text-muted">
+                      {{ producto.anio_lanzamiento|date:"Y" }} · {{ producto.plataforma }}
+                    </p>
 
-                  <p class="card-text small mb-2">
-                    {{ producto.descripcion|default:"Sin descripción."|truncatechars:110 }}
-                  </p>
+                    <p class="mb-1 small">
+                      <span class="badge bg-secondary me-1">
+                        {{ producto.get_formato_display }}
+                      </span>
+                      <span class="badge bg-success">
+                        {{ producto.get_estado_display }}
+                      </span>
+                    </p>
 
-                  <div class="mt-auto d-flex justify-content-between align-items-center">
-                    <span class="fw-bold fs-5">
-                      ${{ producto.valor }}
-                    </span>
-                    <a href="{% url 'cart_add' producto.id %}"
-                       class="btn btn-sm btn-primary">
-                      Agregar al carrito
-                    </a>
+                    <p class="mb-1 small text-muted">
+                      {{ producto.generos.all|join:", " }}
+                    </p>
+
+                    <p class="card-text small mb-2">
+                      {{ producto.descripcion|default:"Sin descripción."|truncatechars:90 }}
+                    </p>
+
+                    <div class="mt-auto d-flex justify-content-between align-items-end">
+                      <div class="d-flex flex-column">
+                        <span class="small text-muted">Precio</span>
+                        <span class="fw-bold fs-6">
+                          ${{ producto.valor }}
+                        </span>
+                      </div>
+
+                      <form method="post" action="{% url 'cart_add' producto.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-sm">
+                          Agregar
+                        </button>
+                      </form>
+                    </div>
                   </div>
 
                 </div>
               </div>
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
-            <div class="mb-3" style="font-size: 3rem;">
-              📦
-            </div>
-            <h5 class="card-title mb-2">
-              Aún no hay productos
-            </h5>
-            <p class="card-text text-muted">
-              Cuando agregues items, aparecerán aquí.
-            </p>
+            {% endfor %}
           </div>
-        </div>
-      {% endif %}
-    </main>
+        {% else %}
+          <div class="card border-0 shadow-sm w-100">
+            <div class="card-body text-center py-5">
+              <h5 class="card-title mb-2">
+                No se encontraron productos
+              </h5>
+              <p class="text-muted mb-0">
+                Ajusta los filtros o limpia la búsqueda para ver todo el catálogo.
+              </p>
+            </div>
+          </div>
+        {% endif %}
+      </main>
 
-  </div>
-</div>
-
-<!-- Offcanvas (panel administrativo) -->
-<div class="offcanvas offcanvas-start"
-     tabindex="-1"
-     id="adminPanel"
-     aria-labelledby="adminPanelLabel">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="adminPanelLabel">
-      Panel administrativo
-    </h5>
-    <button type="button"
-            class="btn-close text-reset"
-            data-bs-dismiss="offcanvas"
-            aria-label="Cerrar"></button>
-  </div>
-
-  <div class="offcanvas-body">
-    <div class="list-group">
-      <a href="/admin/" class="list-group-item list-group-item-action">
-        Admin Django
-      </a>
-      <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action">
-        Productos
-      </a>
     </div>
   </div>
 </div>
 
+{# ===================== PANEL ADMINISTRATIVO ===================== #}
+
+{% if user.is_staff or user.is_superuser %}
+  <div class="offcanvas offcanvas-start"
+       tabindex="-1"
+       id="adminPanel"
+       aria-labelledby="adminPanelLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="adminPanelLabel">
+        Panel administrativo
+      </h5>
+      <button type="button"
+              class="btn-close text-reset"
+              data-bs-dismiss="offcanvas"
+              aria-label="Cerrar"></button>
+    </div>
+
+    <div class="offcanvas-body">
+      <div class="list-group">
+        <a href="/admin/" class="list-group-item list-group-item-action">
+          Admin Django
+        </a>
+        <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action">
+          Productos
+        </a>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
 {% endblock %}
+
 
 
